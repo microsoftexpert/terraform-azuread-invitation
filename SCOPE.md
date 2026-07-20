@@ -1,12 +1,12 @@
-# SCOPE — tf-mod-azuread-invitation
+# SCOPE — terraform-azuread-invitation
 
 ## In scope
 - `azuread_invitation.this`
 
 ## Out of scope (consumed/handled elsewhere)
-- Group membership for the invited guest → `tf-mod-azuread-group` (consumes `object_id`)
-- Role assignment for the invited guest → `tf-mod-azuread-directory-role` (consumes `object_id`)
-- Access package assignment → `tf-mod-azuread-access-package`
+- Group membership for the invited guest → `terraform-azuread-group` (consumes `object_id`)
+- Role assignment for the invited guest → `terraform-azuread-directory-role` (consumes `object_id`)
+- Access package assignment → `terraform-azuread-access-package`
 - Tenant External Collaboration settings (allow/block domains, who-can-invite) → tenant configuration, **not** managed by this module
 
 ## Graph API permissions required
@@ -24,7 +24,7 @@ The Terraform service principal needs **one** of the following application roles
 ## Emits
 | Output | Description | Typically consumed by |
 |---|---|---|
-| `object_id` | Invited user's directory object ID (alias of `user_id`) | `tf-mod-azuread-group` (member `object_id`), `tf-mod-azuread-directory-role` (principal), `tf-mod-azuread-access-package`, role assignments |
+| `object_id` | Invited user's directory object ID (alias of `user_id`) | `terraform-azuread-group` (member `object_id`), `terraform-azuread-directory-role` (principal), `terraform-azuread-access-package`, role assignments |
 | `user_id` | Raw `azuread_invitation.user_id` attribute | Same as `object_id` |
 | `id` | Resource ID of the invitation object | State/audit references |
 | `user_email_address` | Email the invitation was sent to | Audit logs, notification pipelines |

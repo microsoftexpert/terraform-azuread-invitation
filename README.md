@@ -37,14 +37,14 @@ Whether it's a star, a professional connection, or a coffee, every gesture helps
 
 ## 🗺️ Where this fits in the family
 
-This module is an entry-point / identity-creation module — it consumes no other `tf-mod-azuread-*` module's outputs, only a caller-supplied email address and redirect URL. It sits upstream of every module that grants access to the invited guest: per SCOPE.md, its `object_id` feeds `tf-mod-azuread-group` (membership), `tf-mod-azuread-directory-role` (role assignment), and `tf-mod-azuread-access-package` (entitlements).
+This module is an entry-point / identity-creation module — it consumes no other `terraform-azuread-*` module's outputs, only a caller-supplied email address and redirect URL. It sits upstream of every module that grants access to the invited guest: per SCOPE.md, its `object_id` feeds `terraform-azuread-group` (membership), `terraform-azuread-directory-role` (role assignment), and `terraform-azuread-access-package` (entitlements).
 
 ```mermaid
 flowchart LR
- THIS["tf-mod-azuread-invitation<br/>(THIS MODULE)"]
- GROUP["tf-mod-azuread-group"]
- ROLE["tf-mod-azuread-directory-role"]
- PKG["tf-mod-azuread-access-package"]
+ THIS["terraform-azuread-invitation<br/>(THIS MODULE)"]
+ GROUP["terraform-azuread-group"]
+ ROLE["terraform-azuread-directory-role"]
+ PKG["terraform-azuread-access-package"]
 
  THIS -->|"object_id"| GROUP
  THIS -->|"object_id"| ROLE
@@ -53,7 +53,7 @@ flowchart LR
  style THIS fill:#8957E5,color:#fff
 ```
 
-This module **consumes** no other module's outputs — it takes only caller-supplied email/redirect configuration; it **emits** `object_id` (the invited user's directory ID), consumed by `tf-mod-azuread-group`, `tf-mod-azuread-directory-role`, and `tf-mod-azuread-access-package` — see the Emits table in [SCOPE.md](./SCOPE.md).
+This module **consumes** no other module's outputs — it takes only caller-supplied email/redirect configuration; it **emits** `object_id` (the invited user's directory ID), consumed by `terraform-azuread-group`, `terraform-azuread-directory-role`, and `terraform-azuread-access-package` — see the Emits table in [SCOPE.md](./SCOPE.md).
 
 ---
 
@@ -63,7 +63,7 @@ A single, create-only resource with two independently-optional dynamic blocks �
 
 ```mermaid
 flowchart TD
- subgraph mod["tf-mod-azuread-invitation"]
+ subgraph mod["terraform-azuread-invitation"]
  THIS["azuread_invitation.this<br/>(keystone)<br/>create-only B2B guest/member invite"]
  MSG["dynamic message<br/>(when var.message != null)"]
  end
@@ -78,7 +78,7 @@ flowchart TD
 ## 📁 Module Structure
 
 ```
-tf-mod-azuread-invitation/
+terraform-azuread-invitation/
 ├── providers.tf # Terraform & azuread provider pins (no provider {} block)
 ├── variables.tf # Typed inputs: identity refs, user_type, message, timeouts
 ├── main.tf # Single azuread_invitation.this resource (total renderer)
@@ -93,7 +93,7 @@ tf-mod-azuread-invitation/
 
 ```hcl
 module "guest_invite" {
-  source = "git::https://github.com/microsoftexpert/tf-mod-azuread-invitation?ref=v1.0.0"
+  source = "git::https://github.com/microsoftexpert/terraform-azuread-invitation?ref=v1.0.0"
 
   user_email_address = "auditor@partner-firm.com"
   redirect_url       = "https://myapps.microsoft.com"
@@ -126,7 +126,7 @@ Derived from the SCOPE.md Emits table — the primary cross-module output is `ob
 
 | This module output | Feeds into |
 |---|---|
-| `object_id` | `tf-mod-azuread-group` (member `object_id`), `tf-mod-azuread-directory-role` (principal), `tf-mod-azuread-access-package` (resource association), role assignments |
+| `object_id` | `terraform-azuread-group` (member `object_id`), `terraform-azuread-directory-role` (principal), `terraform-azuread-access-package` (resource association), role assignments |
 | `user_id` | Identical to `object_id` — the raw `azuread_invitation.user_id` attribute |
 | `redeem_url` | **`sensitive`** — delivered to the invitee over a secure channel (Key Vault, secure email); never logged |
 | `user_email_address` | Audit logs, notification pipelines |
@@ -139,7 +139,7 @@ Derived from the SCOPE.md Emits table — the primary cross-module output is `ob
 - **`redeem_url` is write-only-grade.** Graph returns the redemption URL only at creation time. It is marked `sensitive = true` so it never appears in console output or plan diffs. To consume it, reference it **only** inside another `sensitive` output or write it straight to Key Vault — never `output` it as a plain string and never echo it in CI logs. Once the guest redeems it, the link is spent.
 - **Secure-by-default user type.** `user_type` defaults to `"Guest"`, which receives Entra ID's limited guest directory permissions. `"Member"` grants member-equivalent directory access and can only be set by a Global Administrator — opt in explicitly.
 - **`message.body` vs `message.language` are mutually exclusive.** `body` supplies your own message text; `language` only selects the locale of the built-in default message. The module enforces this with a `validation` block, and caps `additional_recipients` at 1 (Azure's documented limit).
-- **No credentials, no owners.** Unlike `tf-mod-azuread-application` / `tf-mod-azuread-service-principal`, an invitation creates no password or certificate and has no owner collection — so there are no credential outputs to rotate. The only sensitive surface is `redeem_url`.
+- **No credentials, no owners.** Unlike `terraform-azuread-application` / `terraform-azuread-service-principal`, an invitation creates no password or certificate and has no owner collection — so there are no credential outputs to rotate. The only sensitive surface is `redeem_url`.
 - **Tenant-scoped.** No `resource_group_name` — invitations live at the directory level.
 
 ---
@@ -151,7 +151,7 @@ Derived from the SCOPE.md Emits table — the primary cross-module output is `ob
 
 ```hcl
 module "guest_invite" {
-  source = "git::https://github.com/microsoftexpert/tf-mod-azuread-invitation?ref=v1.0.0"
+  source = "git::https://github.com/microsoftexpert/terraform-azuread-invitation?ref=v1.0.0"
 
   user_email_address = "auditor@partner-firm.com"
   redirect_url       = "https://myapps.microsoft.com"
@@ -165,7 +165,7 @@ No `message` block → Entra ID sends **no** invitation email; deliver `redeem_u
 
 ```hcl
 module "guest_invite" {
-  source = "git::https://github.com/microsoftexpert/tf-mod-azuread-invitation?ref=v1.0.0"
+  source = "git::https://github.com/microsoftexpert/terraform-azuread-invitation?ref=v1.0.0"
 
   user_email_address = "auditor@partner-firm.com"
   redirect_url       = "https://myapps.microsoft.com"
@@ -180,7 +180,7 @@ module "guest_invite" {
 
 ```hcl
 module "guest_invite" {
-  source = "git::https://github.com/microsoftexpert/tf-mod-azuread-invitation?ref=v1.0.0"
+  source = "git::https://github.com/microsoftexpert/terraform-azuread-invitation?ref=v1.0.0"
 
   user_email_address = "verificateur@cabinet-partenaire.ca"
   redirect_url       = "https://myapps.microsoft.com"
@@ -197,7 +197,7 @@ module "guest_invite" {
 
 ```hcl
 module "guest_invite" {
-  source = "git::https://github.com/microsoftexpert/tf-mod-azuread-invitation?ref=v1.0.0"
+  source = "git::https://github.com/microsoftexpert/terraform-azuread-invitation?ref=v1.0.0"
 
   user_email_address = "auditor@partner-firm.com"
   redirect_url       = "https://myapps.microsoft.com"
@@ -215,7 +215,7 @@ module "guest_invite" {
 
 ```hcl
 module "guest_invite" {
-  source = "git::https://github.com/microsoftexpert/tf-mod-azuread-invitation?ref=v1.0.0"
+  source = "git::https://github.com/microsoftexpert/terraform-azuread-invitation?ref=v1.0.0"
 
   user_email_address = "bob.bobson@partner-firm.com"
   user_display_name  = "Bob Bobson (Partner Firm)"
@@ -231,7 +231,7 @@ module "guest_invite" {
 
 ```hcl
 module "guest_invite" {
-  source = "git::https://github.com/microsoftexpert/tf-mod-azuread-invitation?ref=v1.0.0"
+  source = "git::https://github.com/microsoftexpert/terraform-azuread-invitation?ref=v1.0.0"
 
   user_email_address = "auditor@partner-firm.com"
   redirect_url       = "https://myapps.microsoft.com"
@@ -249,7 +249,7 @@ module "guest_invite" {
 
 ```hcl
 module "internal_contractor" {
-  source = "git::https://github.com/microsoftexpert/tf-mod-azuread-invitation?ref=v1.0.0"
+  source = "git::https://github.com/microsoftexpert/terraform-azuread-invitation?ref=v1.0.0"
 
   user_email_address = "contractor@vendor.com"
   user_display_name  = "Long-term Contractor"
@@ -265,7 +265,7 @@ module "internal_contractor" {
 
 ```hcl
 module "partner_auditor_invite" {
-  source = "git::https://github.com/microsoftexpert/tf-mod-azuread-invitation?ref=v1.0.0"
+  source = "git::https://github.com/microsoftexpert/terraform-azuread-invitation?ref=v1.0.0"
 
   user_email_address = "auditor@external-audit-firm.com"
   user_display_name  = "External Auditor — FY26"
@@ -288,7 +288,7 @@ module "partner_auditor_invite" {
 
 ```hcl
 module "guest_invite" {
-  source = "git::https://github.com/microsoftexpert/tf-mod-azuread-invitation?ref=v1.0.0"
+  source = "git::https://github.com/microsoftexpert/terraform-azuread-invitation?ref=v1.0.0"
 
   user_email_address = "partner@partner-firm.com"
   redirect_url       = "https://collaboration.financialpartners.com/welcome" # must be https
@@ -305,7 +305,7 @@ module "guest_invite" {
 # destroy/recreate — Terraform will re-send a fresh invitation and a new
 # redeem_url. There is no in-place "resend".
 module "guest_invite" {
-  source = "git::https://github.com/microsoftexpert/tf-mod-azuread-invitation?ref=v1.0.0"
+  source = "git::https://github.com/microsoftexpert/terraform-azuread-invitation?ref=v1.0.0"
 
   user_email_address = "auditor@partner-firm.com"
   redirect_url       = "https://myapplications.microsoft.com" # changed → recreate
@@ -320,7 +320,7 @@ module "guest_invite" {
 
 ```hcl
 module "guest_invite" {
-  source             = "git::https://github.com/microsoftexpert/tf-mod-azuread-invitation?ref=v1.0.0"
+  source             = "git::https://github.com/microsoftexpert/terraform-azuread-invitation?ref=v1.0.0"
   user_email_address = "auditor@partner-firm.com"
   redirect_url       = "https://myapps.microsoft.com"
   # message omitted → no email; we hand the link over securely instead
@@ -339,14 +339,14 @@ resource "azurerm_key_vault_secret" "invite_link" {
 
 ```hcl
 module "guest_invite" {
-  source             = "git::https://github.com/microsoftexpert/tf-mod-azuread-invitation?ref=v1.0.0"
+  source             = "git::https://github.com/microsoftexpert/terraform-azuread-invitation?ref=v1.0.0"
   user_email_address = "auditor@partner-firm.com"
   redirect_url       = "https://myapps.microsoft.com"
   message            = {}
 }
 
 module "audit_guests_group" {
-  source       = "git::https://github.com/microsoftexpert/tf-mod-azuread-group?ref=v1.0.0"
+  source       = "git::https://github.com/microsoftexpert/terraform-azuread-group?ref=v1.0.0"
   display_name = "External-Audit-Guests"
 
   members = {
@@ -368,7 +368,7 @@ locals {
 }
 
 module "guest_invites" {
-  source   = "git::https://github.com/microsoftexpert/tf-mod-azuread-invitation?ref=v1.0.0"
+  source   = "git::https://github.com/microsoftexpert/terraform-azuread-invitation?ref=v1.0.0"
   for_each = local.partner_emails
 
   user_email_address = each.value
@@ -435,7 +435,7 @@ message = {
 ## 🚀 Runbook
 
 ```powershell
-cd C:\GitHubCode\newazureadmodules\tf-mod-azuread-invitation
+cd C:\GitHubCode\newazureadmodules\terraform-azuread-invitation
 terraform init -backend=false
 terraform validate
 terraform fmt -check
